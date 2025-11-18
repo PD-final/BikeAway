@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "=== NTU Rush Run Script ==="
+echo "=== BikeAway Run Script ==="
 
 OS="$(uname -s)"
 

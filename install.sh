@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "=== NTU Rush SFML2 Install Script ==="
+echo "=== BikeAway SFML2 Install Script ==="
 
 OS="$(uname -s)"
 

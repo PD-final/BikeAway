@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "=== NTU Rush Build Script ==="
+echo "=== BikeAway Build Script ==="
 
 # Detect PLATFORM
 OS="$(uname -s)"
