@@ -1,7 +1,7 @@
 #include "Game.h"
 
 Game::Game()
-: window(sf::VideoMode(1280, 720), "NTU Rush")
+: window(sf::VideoMode(1280, 720), "BikeAway")
 {
     window.setFramerateLimit(60);
 
@@ -13,7 +13,7 @@ Game::Game()
 
     // setup player
     player.sprite.setTexture(playerTexture);
-    player.sprite.setScale(0.5f, 0.5f);   // 變成 50% 大小
+    player.sprite.setScale(0.3f, 0.3f);   // 變成 50% 大小
     player.worldPos = {1000.f, 1000.f};
     sf::FloatRect bounds = player.sprite.getLocalBounds();
     player.sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
@@ -24,13 +24,18 @@ Game::Game()
     view.setCenter(player.worldPos);
 
     // sample obstacle
-    Obstacle bike;
-    bike.sprite.setTexture(bikeTexture);
-    bike.type = ObstacleType::Bike;
-    bike.setPosition({1000.f, 1000.f});
-    bike.velocity = {10.f, 0.f};
+    unsigned int seed = static_cast<unsigned int>(time(nullptr));
+    srand(seed);
 
-    map.obstacles.push_back(bike);
+    for(int i=0;  i<5; i++){
+        Obstacle obs;
+        obs.sprite.setTexture(bikeTexture);
+        obs.type = ObstacleType::Bike;
+        obs.setPosition({1000.f + rand()%601 - 300, 1000.f+ rand()%601 - 300});
+        obs.sprite.setScale(0.3f, 0.3f);   // 變成 50% 大小
+        obs.velocity = {float(rand() % 61 - 30), float(rand() % 61 - 30)    };
+        map.obstacles.push_back(obs);
+    }
 }
 
 void Game::run() {
