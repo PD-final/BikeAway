@@ -4,7 +4,7 @@ Map::Map() {}
 
 void Map::setTexture(const sf::Texture& tex) {
     mapSprite.setTexture(tex);
-    mapSprite.setScale(1.1f, 1.1f);   // 完整放大兩倍
+    mapSprite.setScale(5.f, 5.f);  
 }
 
 void Map::update(float dt) {
