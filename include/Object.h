@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include "Road.h"
 
 class Object {
 public:
@@ -15,5 +16,6 @@ public:
     sf::FloatRect getBounds() const { return sprite.getGlobalBounds(); }
     // std::array<sf::Vector2f, 4> hitbox;
     sf::Sprite sprite;
+    bool on_road(Road &road);
 };
 
