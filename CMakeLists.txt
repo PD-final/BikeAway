@@ -9,6 +9,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mydata.txt
+               ${CMAKE_CURRENT_BINARY_DIR}/data/mydata.txt
+               COPYONLY)
+
 set(SOURCES
     src/main.cpp
     src/Game.cpp
