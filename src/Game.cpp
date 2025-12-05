@@ -15,10 +15,10 @@ Game::Game()
     window.setKeyRepeatEnabled(false);
 
     mapTexture.loadFromFile("assets/ntu_map.png");
-    playerTexture.loadFromFile("assets/player.png");
+    playerTexture.loadFromFile("assets/player_front.png");
     bikeTexture.loadFromFile("assets/bike.png");
-    playerTextureUp.loadFromFile("assets/player.png");
-    playerTextureDown.loadFromFile("assets/player.png");
+    playerTextureUp.loadFromFile("assets/player_back.png");
+    playerTextureDown.loadFromFile("assets/player_front.png");
     playerTextureLeft.loadFromFile("assets/player_left.png");
     playerTextureRight.loadFromFile("assets/player_right.png");
 
