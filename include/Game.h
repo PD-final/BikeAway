@@ -1,16 +1,18 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+
 #include "Character.h"
 #include "Map.h"
+#include "thinMap.h"
 
 enum class ScreenState { Home, Playing };
 
 class Game {
-public:
+   public:
     Game();
     void run();
 
-private:
+   private:
     void processEvents();
     void update(sf::Time dt);
     void render();
@@ -37,16 +39,18 @@ private:
     sf::Texture playerTexture;
     sf::Texture bikeTexture;
     sf::Texture playerTextureUp;
-    sf::Texture playerTextureDown;      
+    sf::Texture playerTextureDown;
     sf::Texture playerTextureLeft;
     sf::Texture playerTextureRight;
 
     Character player;
     Map map;
-    
-    sf::Clock gameClock;   // 從遊戲開始到現在經過多久
-    sf::Font uiFont;       // 顯示文字用
-    sf::Text timerText;    // 左上角的時間文字
+    thinMap thinCreator;
+    sf::Image worldMap;
+
+    sf::Clock gameClock;  // 從遊戲開始到現在經過多久
+    sf::Font uiFont;      // 顯示文字用
+    sf::Text timerText;   // 左上角的時間文字
 
     ScreenState screen = ScreenState::Home;
     sf::RectangleShape homeBackground;

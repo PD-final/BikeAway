@@ -15,6 +15,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mydata.txt
 
 set(SOURCES
     src/main.cpp
+    src/thinMap.cpp
     src/Game.cpp
     src/Character.cpp
     src/Obstacle.cpp

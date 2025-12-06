@@ -1,5 +1,7 @@
 #include "PowerUp.h"
 
+#include "Character.h"
+
 void PowerUp::apply(Character& player) {
     switch (type) {
         case PowerUpType::Coffee:
