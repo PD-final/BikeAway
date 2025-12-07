@@ -14,10 +14,16 @@ cd build
 if [[ "$OS" == "Darwin" ]]; then
     echo "[Mac] Running CMake..."
 
-    # 尋找 SFML (Homebrew)
+    # Locate Homebrew packages for CMake
     SFML_DIR=$(brew --prefix sfml)/lib/cmake/SFML
+    NLOHMANN_PREFIX=$(brew --prefix nlohmann-json 2>/dev/null || true)
+    if [[ -z "$NLOHMANN_PREFIX" ]]; then
+        echo "[Mac] nlohmann-json not found via Homebrew. Install with: brew install nlohmann-json"
+    fi
 
-    cmake .. -DSFML_DIR="$SFML_DIR"
+    cmake .. \
+        -DSFML_DIR="$SFML_DIR" \
+        -DCMAKE_PREFIX_PATH="$NLOHMANN_PREFIX"
     cmake --build .
     exit 0
 fi

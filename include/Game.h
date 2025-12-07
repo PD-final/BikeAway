@@ -3,7 +3,7 @@
 #include "Character.h"
 #include "Map.h"
 
-enum class ScreenState { Home, Playing };
+enum class ScreenState { Home, Playing, Win };
 
 class Game {
 public:
@@ -17,18 +17,26 @@ private:
     void changeScreen(ScreenState next);
     void onEnterHome();
     void onEnterPlaying();
+    void onEnterWin();
 
     void handleHomeEvent(const sf::Event& event);
     void handlePlayingEvent(const sf::Event& event);
+    void handleWinEvent(const sf::Event& event);
 
     void updateHome(sf::Time dt);
     void updatePlaying(sf::Time dt);
+    void updateWin(sf::Time dt);
 
     void renderHome();
     void renderPlaying();
+    void renderWin();
 
     void setupHomeUI();
     void updateHomeLayout(sf::Vector2u size);
+    void chooseStartAndDestination();
+    sf::Vector2f buildingCenter(const Building& b) const;
+    void drawBuildingMarkers(sf::RenderTarget& target) const;
+    void drawBuildingOutlines(sf::RenderTarget& target) const;
 
     sf::RenderWindow window;
     sf::View view;
@@ -43,10 +51,14 @@ private:
 
     Character player;
     Map map;
+    Building startBuilding;
+    Building destinationBuilding;
     
     sf::Clock gameClock;   // 從遊戲開始到現在經過多久
     sf::Font uiFont;       // 顯示文字用
     sf::Text timerText;    // 左上角的時間文字
+    sf::Text missionText;
+    sf::Text winText;
 
     ScreenState screen = ScreenState::Home;
     sf::RectangleShape homeBackground;

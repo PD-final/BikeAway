@@ -9,8 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mydata.txt
-               ${CMAKE_CURRENT_BINARY_DIR}/data/mydata.txt
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/hitbox.json
+               ${CMAKE_CURRENT_BINARY_DIR}/data/hitbox.json
                COPYONLY)
 
 set(SOURCES
@@ -20,6 +20,8 @@ set(SOURCES
     src/Obstacle.cpp
     src/PowerUp.cpp
     src/Map.cpp
+    src/Object.cpp
+    src/Utils.cpp
 )
 
 add_executable(ntu_rush ${SOURCES})
@@ -29,10 +31,12 @@ target_include_directories(ntu_rush PRIVATE
 )
 
 find_package(SFML 2.5 COMPONENTS system window graphics audio REQUIRED)
+find_package(nlohmann_json 3.2.0 REQUIRED)
 
 target_link_libraries(ntu_rush PRIVATE
     sfml-system
     sfml-window
     sfml-graphics
     sfml-audio
+    nlohmann_json::nlohmann_json
 )

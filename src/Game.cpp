@@ -30,6 +30,7 @@ Game::Game()
     );
 
     map.setTexture(mapTexture);
+    map.loadBuildingsFromJson("data/hitbox.json");
 
     // setup player
     player.sprite.setTexture(playerTexture);
@@ -37,6 +38,12 @@ Game::Game()
     player.worldPos = {2000.f, 2000.f};
     sf::FloatRect bounds = player.sprite.getLocalBounds();
     player.sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
+    player.hitbox = {{
+        {0.f, 0.f},
+        {bounds.width, 0.f},
+        {bounds.width, bounds.height},
+        {0.f, bounds.height}
+    }};
 
 
     // camera
@@ -57,6 +64,19 @@ Game::Game()
     timerText.setString("00:00");       // 初始顯示
     setupHomeUI();
     changeScreen(ScreenState::Home);
+
+    missionText.setFont(uiFont);
+    missionText.setCharacterSize(24);
+    missionText.setFillColor(sf::Color::White);
+    missionText.setOutlineColor(sf::Color::Black);
+    missionText.setOutlineThickness(2.f);
+    missionText.setPosition(10.f, 40.f);
+
+    winText.setFont(uiFont);
+    winText.setCharacterSize(48);
+    winText.setFillColor(sf::Color::Yellow);
+    winText.setOutlineColor(sf::Color::Black);
+    winText.setOutlineThickness(3.f);
 
     // sample obstacle
     unsigned int seed = static_cast<unsigned int>(time(nullptr));
@@ -101,6 +121,9 @@ void Game::processEvents() {
             case ScreenState::Playing:
                 handlePlayingEvent(event);
                 break;
+            case ScreenState::Win:
+                handleWinEvent(event);
+                break;
         }
     }
 }
@@ -112,6 +135,9 @@ void Game::update(sf::Time dt) {
             break;
         case ScreenState::Playing:
             updatePlaying(dt);
+            break;
+        case ScreenState::Win:
+            updateWin(dt);
             break;
     }
 }
@@ -125,6 +151,9 @@ void Game::render() {
             break;
         case ScreenState::Playing:
             renderPlaying();
+            break;
+        case ScreenState::Win:
+            renderWin();
             break;
     }
 
@@ -167,6 +196,13 @@ void Game::handlePlayingEvent(const sf::Event& event) {
     }
 }
 
+void Game::handleWinEvent(const sf::Event& event) {
+    if (event.type == sf::Event::KeyReleased &&
+        (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Escape || event.key.code == sf::Keyboard::Space)) {
+        changeScreen(ScreenState::Home);
+    }
+}
+
 void Game::updateHomeLayout(sf::Vector2u size) {
     sf::Vector2f fSize(static_cast<float>(size.x), static_cast<float>(size.y));
     homeBackground.setSize(fSize);
@@ -196,18 +232,35 @@ void Game::changeScreen(ScreenState next) {
         case ScreenState::Playing:
             onEnterPlaying();
             break;
+        case ScreenState::Win:
+            onEnterWin();
+            break;
     }
 }
 
 void Game::onEnterPlaying() {
-    player.worldPos = {2000.f, 2000.f};
+    chooseStartAndDestination();
+    if (!map.buildings.empty()) {
+        player.worldPos = buildingCenter(startBuilding);
+    } else {
+        player.worldPos = {2000.f, 2000.f};
+    }
     view.setCenter(player.worldPos);
     map.mapSprite.setPosition(0.f, 0.f);
     gameClock.restart();
+    // convert to char* and use utf8()
+    std::string missionStr = "Start: " + startBuilding.name + " | Destination: " + destinationBuilding.name;
+    const char* missionCStr = missionStr.c_str();
+    missionText.setString(utf8(missionCStr));
 }
 
 void Game::onEnterHome() {
     window.setView(window.getDefaultView());
+}
+
+void Game::onEnterWin() {
+    window.setView(window.getDefaultView());
+    winText.setString(utf8(("You reached " + destinationBuilding.name + "! Press Enter/Esc.").c_str()));
 }
 
 void Game::updateHome(sf::Time) {
@@ -218,11 +271,20 @@ void Game::updatePlaying(sf::Time dt) {
     float dtSec = dt.asSeconds();
 
     player.handleInput(dtSec);
+    player.setPosition(player.worldPos);
 
     // update view center to player's world position
     view.setCenter(player.worldPos);
 
     map.update(dtSec);
+    // check destination collision
+    if (map.buildings.size() >= 2) {
+        destinationBuilding.sprite.setPosition(0.f, 0.f); // keep world-aligned hitbox
+        if (player.collidesWith(destinationBuilding)) {
+            changeScreen(ScreenState::Win);
+            return;
+        }
+    }
         // ====== 更新計時器文字 ======
     sf::Time elapsed = gameClock.getElapsedTime();
     int totalSec = static_cast<int>(elapsed.asSeconds());
@@ -247,10 +309,80 @@ void Game::renderPlaying() {
     window.setView(view);
 
     map.draw(window);
+    drawBuildingOutlines(window);
+    drawBuildingMarkers(window);
     player.setPosition(view.getCenter());
     player.draw(window);
     
     // ==== 2. 畫 UI（固定螢幕座標）====
     window.setView(window.getDefaultView());
     window.draw(timerText);
+    window.draw(missionText);
+}
+
+void Game::updateWin(sf::Time) {
+    // idle state; nothing to update yet
+}
+
+void Game::renderWin() {
+    window.setView(window.getDefaultView());
+    window.clear(sf::Color(18, 26, 60));
+    window.draw(winText);
+}
+
+void Game::chooseStartAndDestination() {
+    if (map.buildings.size() < 2) {
+        startBuilding = Building("Unknown");
+        destinationBuilding = Building("Unknown");
+        return;
+    }
+    size_t a = static_cast<size_t>(rand() % map.buildings.size());
+    size_t b = a;
+    while (b == a) {
+        b = static_cast<size_t>(rand() % map.buildings.size());
+    }
+    startBuilding = map.buildings[a];
+    destinationBuilding = map.buildings[b];
+}
+
+sf::Vector2f Game::buildingCenter(const Building& b) const {
+    sf::Vector2f sum{0.f, 0.f};
+    for (const auto& p : b.hitbox) {
+        sum += p;
+    }
+    sum.x /= 4.f;
+    sum.y /= 4.f;
+    return sum;
+}
+
+void Game::drawBuildingMarkers(sf::RenderTarget& target) const {
+    if (map.buildings.empty()) return;
+    sf::CircleShape marker(8.f);
+    marker.setOrigin(8.f, 8.f);
+    for (const auto& b : map.buildings) {
+        sf::Color color(80, 180, 255);
+        if (b.name == startBuilding.name) color = sf::Color(50, 200, 120);
+        if (b.name == destinationBuilding.name) color = sf::Color(220, 80, 80);
+        marker.setFillColor(color);
+        marker.setPosition(buildingCenter(b));
+        target.draw(marker);
+    }
+}
+
+void Game::drawBuildingOutlines(sf::RenderTarget& target) const {
+    if (map.buildings.empty()) return;
+    sf::ConvexShape poly;
+    poly.setPointCount(4);
+    poly.setOutlineThickness(3.f);
+    for (const auto& b : map.buildings) {
+        sf::Color color(80, 180, 255, 200);
+        if (b.name == startBuilding.name) color = sf::Color(50, 200, 120, 220);
+        if (b.name == destinationBuilding.name) color = sf::Color(220, 80, 80, 220);
+        for (size_t i = 0; i < 4; ++i) {
+            poly.setPoint(i, b.hitbox[i]);
+        }
+        poly.setOutlineColor(color);
+        poly.setFillColor(sf::Color(color.r, color.g, color.b, 40));
+        target.draw(poly);
+    }
 }

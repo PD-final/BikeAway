@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
+#include <string>
 #include <SFML/Graphics.hpp>
 #include "Obstacle.h"
 #include "PowerUp.h"
+#include "Building.h"
 
 class Map {
 public:
@@ -11,9 +13,11 @@ public:
 
     void update(float dt);
     void draw(sf::RenderTarget& target) const;
+    void loadBuildingsFromJson(const std::string& path);
 
     sf::Sprite mapSprite;
 
     std::vector<Obstacle> obstacles;
     std::vector<PowerUp> powerups;
+    std::vector<Building> buildings;
 };
