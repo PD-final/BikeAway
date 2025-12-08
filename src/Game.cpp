@@ -76,13 +76,13 @@ Game::Game() : window(sf::VideoMode(1280, 720), "BikeAway") {
     std::uniform_int_distribution<unsigned int> disX(0, mapSize.x - 1);
     std::uniform_int_distribution<unsigned int> disY(0, mapSize.y - 1);
 
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < 10; i++) {
         Obstacle obs;
         obs.sprite.setTexture(bikeTexture);
         obs.type = ObstacleType::Bike;
 
-        sf::Vector2f pos = static_cast<sf::Vector2f>(obs.nextWhite(
-                               map.img_thin, 100, disX(gen), disY(gen))) *
+        sf::Vector2f pos = static_cast<sf::Vector2f>(obs.findRandomWhite(
+                               map.img_thin, 200, disX(gen), disY(gen))) *
                            map.mapScale;
         obs.setPosition(pos);
         // obs.setPosition(
