@@ -19,20 +19,6 @@ void Map::update(float dt) {
 void Map::draw(sf::RenderTarget& target) const {
     target.draw(mapSprite);
 
-    // draw roads overlay (semi-transparent blue). Road coordinates are already in world space.
-    sf::RectangleShape roadShape;
-    roadShape.setFillColor(sf::Color(80, 140, 255, 90));
-    for (const auto& r : roads) {
-        sf::Vector2f delta = r.end - r.start;
-        float length = std::sqrt(delta.x * delta.x + delta.y * delta.y);
-        float diameter = static_cast<float>(r.width * 2); // width now represents radius
-        roadShape.setSize({length, diameter});
-        roadShape.setOrigin(0.f, diameter / 2.f);
-        roadShape.setPosition(r.start);
-        roadShape.setRotation(std::atan2(delta.y, delta.x) * 180.f / 3.14159265f);
-        target.draw(roadShape);
-    }
-
     for (auto& o : obstacles)
         o.draw(target);
 

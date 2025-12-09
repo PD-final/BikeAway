@@ -37,7 +37,8 @@ private:
 
     void setupHomeUI();
     void updateHomeLayout(sf::Vector2u size);
-    void chooseStartAndDestination();
+    void chooseDestination();
+    sf::Vector2f pickRandomSpawn() const;
     sf::Vector2f buildingCenter(const Building& b) const;
     void drawBuildingMarkers(sf::RenderTarget& target) const;
     void drawBuildingOutlines(sf::RenderTarget& target) const;
@@ -55,6 +56,8 @@ private:
     sf::Texture bikeTextureFront;
     sf::Texture bikeTextureLeft;
     sf::Texture bikeTextureRight;
+    sf::Texture entryTexture;
+    sf::Sprite entrySprite;
     sf::Texture playerTextureUp;
     sf::Texture playerTextureDown;      
     sf::Texture playerTextureLeft;
@@ -71,6 +74,11 @@ private:
     sf::Text missionText;
     sf::Text winText;
     sf::Text failText;
+    sf::Text shieldText;
+    sf::Text invincibleText;
+    float hitFlashSeconds = 0.f;
+    float spawnInvincibleSeconds = 0.f;
+    float shieldInvincibleSeconds = 0.f;
 
     ScreenState screen = ScreenState::Home;
     sf::RectangleShape homeBackground;

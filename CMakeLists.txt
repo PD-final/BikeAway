@@ -33,7 +33,7 @@ target_include_directories(ntu_rush PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-find_package(SFML 2.5 COMPONENTS system window graphics audio REQUIRED)
+find_package(SFML 2.6 COMPONENTS system window graphics audio REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 
 target_link_libraries(ntu_rush PRIVATE

@@ -2,6 +2,7 @@
 #include "Object.h"
 #include "Road.h"
 #include <cmath>
+#include <algorithm>
 
 enum class ObstacleType { Bike, Car, Pedestrian };
 
@@ -16,9 +17,11 @@ public:
     float lateralOffset = 0.f;   // signed offset from centerline, uses road width radius
     int directionSign = 1;       // 1: start->end, -1: end->start
     float spriteBaseAngle = 0.f; // orientation offset based on texture facing
+    float spawnGraceSeconds = 0.f; // ignore collisions right after spawn
 
     void update(float dt) override {
         if (type == ObstacleType::Bike && road) {
+            spawnGraceSeconds = std::max(0.f, spawnGraceSeconds - dt);
             sf::Vector2f dir = (directionSign >= 0) ? (road->end - road->start) : (road->start - road->end);
             float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
             if (len > 0.0001f) {
