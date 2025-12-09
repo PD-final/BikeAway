@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include <cmath>
 #include <array>
+#include <iostream>
 
 bool Object::on_road(Road &road) {
   sf::Vector2f p = getPosition();
@@ -13,7 +14,7 @@ bool Object::on_road(Road &road) {
   else{
     dist = std::min(abs(p - road.start), abs(p - road.end));
   }
-  return dist <= road.width ;
+  return std::abs(dist) <= road.width ;
 }
 
 

@@ -5,6 +5,7 @@
 #include "Obstacle.h"
 #include "PowerUp.h"
 #include "Building.h"
+#include "Road.h"
 
 class Map {
 public:
@@ -14,10 +15,12 @@ public:
     void update(float dt);
     void draw(sf::RenderTarget& target) const;
     void loadBuildingsFromJson(const std::string& path);
+    void loadRoadsFromJson(const std::string& path);
 
     sf::Sprite mapSprite;
 
     std::vector<Obstacle> obstacles;
     std::vector<PowerUp> powerups;
     std::vector<Building> buildings;
+    std::vector<Road> roads;
 };

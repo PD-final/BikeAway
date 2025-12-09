@@ -1,6 +1,9 @@
 #include "Game.h"
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
+#include <cmath>
+#include <ctime>
 
 namespace {
 sf::String utf8(const char* text) {
@@ -17,6 +20,9 @@ Game::Game()
     mapTexture.loadFromFile("assets/ntu_map.png");
     playerTexture.loadFromFile("assets/player_front.png");
     bikeTexture.loadFromFile("assets/bike.png");
+    bikeTextureFront.loadFromFile("assets/bike_front.png");
+    bikeTextureLeft.loadFromFile("assets/bike_left.png");
+    bikeTextureRight.loadFromFile("assets/bike_right.png");
     playerTextureUp.loadFromFile("assets/player_back.png");
     playerTextureDown.loadFromFile("assets/player_front.png");
     playerTextureLeft.loadFromFile("assets/player_left.png");
@@ -31,19 +37,16 @@ Game::Game()
 
     map.setTexture(mapTexture);
     map.loadBuildingsFromJson("data/hitbox.json");
+    map.loadRoadsFromJson("data/roads.json");
+    spawnBikesOnRoads();
 
     // setup player
     player.sprite.setTexture(playerTexture);
     player.sprite.setScale(0.15f, 0.15f);   // 變成 30% 大小
     player.worldPos = {2000.f, 2000.f};
     sf::FloatRect bounds = player.sprite.getLocalBounds();
-    player.sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
-    player.hitbox = {{
-        {0.f, 0.f},
-        {bounds.width, 0.f},
-        {bounds.width, bounds.height},
-        {0.f, bounds.height}
-    }};
+    player.sprite.setOrigin(bounds.width / 2.f, bounds.height);
+    setBottomHitbox(player, 0.33f);
 
 
     // camera
@@ -78,19 +81,12 @@ Game::Game()
     winText.setOutlineColor(sf::Color::Black);
     winText.setOutlineThickness(3.f);
 
-    // sample obstacle
-    unsigned int seed = static_cast<unsigned int>(time(nullptr));
-    srand(seed);
+    failText.setFont(uiFont);
+    failText.setCharacterSize(48);
+    failText.setFillColor(sf::Color::Red);
+    failText.setOutlineColor(sf::Color::Black);
+    failText.setOutlineThickness(3.f);
 
-    for(int i=0;  i<5; i++){
-        Obstacle obs;
-        obs.sprite.setTexture(bikeTexture);
-        obs.type = ObstacleType::Bike;
-        obs.setPosition({1000.f + rand()%601 - 300, 1000.f+ rand()%601 - 300});
-        obs.sprite.setScale(0.3f, 0.3f);   // 變成 50% 大小
-        obs.velocity = {float(rand() % 61 - 30), float(rand() % 61 - 30)    };
-        map.obstacles.push_back(obs);
-    }
 }
 
 void Game::run() {
@@ -124,6 +120,9 @@ void Game::processEvents() {
             case ScreenState::Win:
                 handleWinEvent(event);
                 break;
+            case ScreenState::Fail:
+                handleFailEvent(event);
+                break;
         }
     }
 }
@@ -138,6 +137,9 @@ void Game::update(sf::Time dt) {
             break;
         case ScreenState::Win:
             updateWin(dt);
+            break;
+        case ScreenState::Fail:
+            updateFail(dt);
             break;
     }
 }
@@ -154,6 +156,9 @@ void Game::render() {
             break;
         case ScreenState::Win:
             renderWin();
+            break;
+        case ScreenState::Fail:
+            renderFail();
             break;
     }
 
@@ -203,6 +208,13 @@ void Game::handleWinEvent(const sf::Event& event) {
     }
 }
 
+void Game::handleFailEvent(const sf::Event& event) {
+    if (event.type == sf::Event::KeyReleased &&
+        (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Escape || event.key.code == sf::Keyboard::Space)) {
+        changeScreen(ScreenState::Home);
+    }
+}
+
 void Game::updateHomeLayout(sf::Vector2u size) {
     sf::Vector2f fSize(static_cast<float>(size.x), static_cast<float>(size.y));
     homeBackground.setSize(fSize);
@@ -235,6 +247,9 @@ void Game::changeScreen(ScreenState next) {
         case ScreenState::Win:
             onEnterWin();
             break;
+        case ScreenState::Fail:
+            onEnterFail();
+            break;
     }
 }
 
@@ -263,6 +278,11 @@ void Game::onEnterWin() {
     winText.setString(utf8(("You reached " + destinationBuilding.name + "! Press Enter/Esc.").c_str()));
 }
 
+void Game::onEnterFail() {
+    window.setView(window.getDefaultView());
+    failText.setString(utf8(u8"撞到腳踏車了! 按 Enter / Esc 回首頁"));
+}
+
 void Game::updateHome(sf::Time) {
     // No-op for now; placeholder for future home animations or timers.
 }
@@ -270,13 +290,27 @@ void Game::updateHome(sf::Time) {
 void Game::updatePlaying(sf::Time dt) {
     float dtSec = dt.asSeconds();
 
+    sf::Vector2f prevPos = player.worldPos;
     player.handleInput(dtSec);
     player.setPosition(player.worldPos);
+
+    // prevent leaving roads
+    if (!playerOnAnyRoad()) {
+        player.worldPos = prevPos;
+        player.setPosition(player.worldPos);
+    }
 
     // update view center to player's world position
     view.setCenter(player.worldPos);
 
     map.update(dtSec);
+    // check collision with bikes
+    for (const auto& obs : map.obstacles) {
+        if (obs.type == ObstacleType::Bike && player.collidesWith(obs)) {
+            changeScreen(ScreenState::Fail);
+            return;
+        }
+    }
     // check destination collision
     if (map.buildings.size() >= 2) {
         destinationBuilding.sprite.setPosition(0.f, 0.f); // keep world-aligned hitbox
@@ -324,10 +358,90 @@ void Game::updateWin(sf::Time) {
     // idle state; nothing to update yet
 }
 
+void Game::updateFail(sf::Time) {
+    // idle
+}
+
 void Game::renderWin() {
     window.setView(window.getDefaultView());
     window.clear(sf::Color(18, 26, 60));
     window.draw(winText);
+}
+
+void Game::renderFail() {
+    window.setView(window.getDefaultView());
+    window.clear(sf::Color(30, 0, 0));
+    window.draw(failText);
+}
+
+void Game::spawnBikesOnRoads() {
+    unsigned int seed = static_cast<unsigned int>(time(nullptr));
+    srand(seed);
+    map.obstacles.clear();
+    for (size_t i = 0; i < map.roads.size(); ++i) {
+        const Road& r = map.roads[i];
+        sf::Vector2f dir = r.end - r.start;
+        float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+        if (len < 1.f) continue;
+        sf::Vector2f u = dir / len;
+        sf::Vector2f n{-u.y, u.x};
+
+        int count = std::max(2, static_cast<int>(len / 300.f)); // more bikes on longer roads
+        for (int k = 0; k < count; ++k) {
+            Obstacle bike;
+            bike.type = ObstacleType::Bike;
+            bike.road = &r;
+            bike.directionSign = (rand() % 2 == 0) ? 1 : -1;
+            bike.speedAlong = 150.f + static_cast<float>(rand() % 101); // 150-250
+            float maxOffset = static_cast<float>(r.width) * 0.7f;
+            bike.lateralOffset = maxOffset == 0.f ? 0.f : (static_cast<float>(rand()) / RAND_MAX * 2.f - 1.f) * maxOffset;
+            float startDist = (static_cast<float>(rand()) / RAND_MAX) * len;
+            bike.distanceAlong = startDist;
+            sf::Vector2f pos = ((bike.directionSign >= 0) ? r.start : r.end) + u * startDist + n * bike.lateralOffset;
+            bike.sprite.setTexture(bikeTextureFront);
+            bike.sprite.setScale(0.25f, 0.25f);
+            sf::FloatRect b = bike.sprite.getLocalBounds();
+            bike.sprite.setOrigin(b.width / 2.f, b.height );
+            bike.sprite.setPosition(pos);
+            sf::Vector2f heading = u * static_cast<float>(bike.directionSign);
+            bike.spriteBaseAngle = setBikeTextureForDirection(bike, heading);
+            float headingDeg = std::atan2(heading.y, heading.x) * 180.f / 3.14159265f;
+            bike.sprite.setRotation(headingDeg - bike.spriteBaseAngle);
+            setBottomHitbox(bike, 0.33f);
+            map.obstacles.push_back(bike);
+        }
+    }
+}
+
+float Game::setBikeTextureForDirection(Obstacle& bike, const sf::Vector2f& dir) {
+    const sf::Texture* tex = &bikeTextureFront;
+    float ax = std::abs(dir.x);
+    float ay = std::abs(dir.y);
+    float baseAngle = 90.f; // front/down baseline
+    if (ax >= ay) {
+        if (dir.x >= 0) {
+            tex = &bikeTextureRight;
+            baseAngle = 0.f;
+        } else {
+            tex = &bikeTextureLeft;
+            baseAngle = 180.f;
+        }
+    }
+    bike.sprite.setTexture(*tex, true); // reset texture rect to avoid cropping
+    sf::FloatRect bounds = bike.sprite.getLocalBounds();
+    bike.sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
+    return baseAngle;
+}
+
+void Game::setBottomHitbox(Object& obj, float fraction) {
+    sf::FloatRect b = obj.sprite.getLocalBounds();
+    float top = b.height * (1.f - fraction);
+    obj.hitbox = {{
+        {0.f, top},
+        {b.width, top},
+        {b.width, b.height},
+        {0.f, b.height}
+    }};
 }
 
 void Game::chooseStartAndDestination() {
@@ -353,6 +467,15 @@ sf::Vector2f Game::buildingCenter(const Building& b) const {
     sum.x /= 4.f;
     sum.y /= 4.f;
     return sum;
+}
+
+bool Game::playerOnAnyRoad() {
+    for (const auto& r : map.roads) {
+        if (player.on_road(const_cast<Road&>(r))) { // on_road requires non-const
+            return true;
+        }
+    }
+    return map.roads.empty(); // if no roads, don't block movement
 }
 
 void Game::drawBuildingMarkers(sf::RenderTarget& target) const {

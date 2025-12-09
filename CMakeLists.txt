@@ -12,6 +12,9 @@ add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/hitbox.json
                ${CMAKE_CURRENT_BINARY_DIR}/data/hitbox.json
                COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/roads.json
+               ${CMAKE_CURRENT_BINARY_DIR}/data/roads.json
+               COPYONLY)
 
 set(SOURCES
     src/main.cpp
