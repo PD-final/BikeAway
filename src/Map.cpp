@@ -11,6 +11,12 @@ void Map::setTexture(const sf::Texture& tex) {
     mapSprite.setScale(5.f, 5.f);  
 }
 
+void Map::setOverlayTexture(const sf::Texture& tex) {
+    overlaySprite.setTexture(tex);
+    overlaySprite.setScale(mapSprite.getScale());
+    overlaySprite.setPosition(mapSprite.getPosition());
+}
+
 void Map::update(float dt) {
     for (auto& o : obstacles)
         o.update(dt);
@@ -24,6 +30,11 @@ void Map::draw(sf::RenderTarget& target) const {
 
     for (auto& p : powerups)
         p.draw(target);
+}
+
+void Map::drawOverlay(sf::RenderTarget& target) const {
+    if (overlaySprite.getTexture())
+        target.draw(overlaySprite);
 }
 
 void Map::loadBuildingsFromJson(const std::string& path) {

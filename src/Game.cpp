@@ -19,12 +19,15 @@ Game::Game()
     window.setKeyRepeatEnabled(false);
 
     mapTexture.loadFromFile("assets/ntu_map.png");
+    mapOverlayTexture.loadFromFile("assets/ntu_map_buildings.png");
     playerTexture.loadFromFile("assets/player_front.png");
     bikeTexture.loadFromFile("assets/bike.png");
     bikeTextureFront.loadFromFile("assets/bike_front.png");
     bikeTextureLeft.loadFromFile("assets/bike_left.png");
     bikeTextureRight.loadFromFile("assets/bike_right.png");
+    bikeTextureBack.loadFromFile("assets/bike_back.png");
     entryTexture.loadFromFile("assets/entry.png");
+    failTexture.loadFromFile("assets/fail.png");
     playerTextureUp.loadFromFile("assets/player_back.png");
     playerTextureDown.loadFromFile("assets/player_front.png");
     playerTextureLeft.loadFromFile("assets/player_left.png");
@@ -38,6 +41,7 @@ Game::Game()
     );
 
     map.setTexture(mapTexture);
+    map.setOverlayTexture(mapOverlayTexture);
     map.loadBuildingsFromJson("data/hitbox.json");
     map.loadRoadsFromJson("data/roads.json");
     spawnBikesOnRoads();
@@ -229,6 +233,17 @@ void Game::updateHomeLayout(sf::Vector2u size) {
     sf::FloatRect promptBounds = startPromptText.getLocalBounds();
     startPromptText.setOrigin(promptBounds.left + promptBounds.width / 2.f, promptBounds.top + promptBounds.height / 2.f);
     startPromptText.setPosition(fSize.x / 2.f, fSize.y * 0.9f);
+
+    if (failTexture.getSize().x > 0 && failTexture.getSize().y > 0) {
+        float fScaleX = fSize.x / static_cast<float>(failTexture.getSize().x);
+        float fScaleY = fSize.y / static_cast<float>(failTexture.getSize().y);
+        float fScale = std::max(fScaleX, fScaleY);
+        failSprite.setTexture(failTexture);
+        failSprite.setScale(fScale, fScale);
+        float fPosX = (fSize.x - failTexture.getSize().x * fScale) * 0.5f;
+        float fPosY = (fSize.y - failTexture.getSize().y * fScale) * 0.5f;
+        failSprite.setPosition(fPosX, fPosY);
+    }
 }
 
 void Game::changeScreen(ScreenState next) {
@@ -275,7 +290,17 @@ void Game::onEnterWin() {
 
 void Game::onEnterFail() {
     window.setView(window.getDefaultView());
-    failText.setString(utf8(u8"撞到腳踏車了! 按 Enter / Esc 回首頁"));
+    sf::Vector2f fSize(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y));
+    if (failTexture.getSize().x > 0 && failTexture.getSize().y > 0) {
+        float fScaleX = fSize.x / static_cast<float>(failTexture.getSize().x);
+        float fScaleY = fSize.y / static_cast<float>(failTexture.getSize().y);
+        float fScale = std::max(fScaleX, fScaleY);
+        failSprite.setTexture(failTexture);
+        failSprite.setScale(fScale, fScale);
+        float fPosX = (fSize.x - failTexture.getSize().x * fScale) * 0.5f;
+        float fPosY = (fSize.y - failTexture.getSize().y * fScale) * 0.5f;
+        failSprite.setPosition(fPosX, fPosY);
+    }
 }
 
 void Game::updateHome(sf::Time) {
@@ -368,7 +393,8 @@ void Game::renderPlaying() {
     map.draw(window);
     player.setPosition(view.getCenter());
     player.draw(window);
-    
+    map.drawOverlay(window); // overlay on top of bikes/player to hide them
+
     // ==== 2. 畫 UI（固定螢幕座標）====
     window.setView(window.getDefaultView());
     window.draw(timerText);
@@ -402,8 +428,8 @@ void Game::renderWin() {
 
 void Game::renderFail() {
     window.setView(window.getDefaultView());
-    window.clear(sf::Color(30, 0, 0));
-    window.draw(failText);
+    window.clear(sf::Color::Black);
+    window.draw(failSprite);
 }
 
 void Game::spawnBikesOnRoads() {
@@ -418,7 +444,7 @@ void Game::spawnBikesOnRoads() {
         sf::Vector2f u = dir / len;
         sf::Vector2f n{-u.y, u.x};
 
-        int count = std::max(2, static_cast<int>(len / 300.f)); // more bikes on longer roads
+        int count = std::max(2, static_cast<int>(len / 100.f)); // more bikes on longer roads
         for (int k = 0; k < count; ++k) {
             Obstacle bike;
             bike.type = ObstacleType::Bike;
@@ -458,6 +484,14 @@ float Game::setBikeTextureForDirection(Obstacle& bike, const sf::Vector2f& dir) 
         } else {
             tex = &bikeTextureLeft;
             baseAngle = 180.f;
+        }
+    } else {
+        if (dir.y < 0) {
+            tex = &bikeTextureBack;
+            baseAngle = -90.f; // back faces up (-Y)
+        } else {
+            tex = &bikeTextureFront; // down-facing baseline
+            baseAngle = 90.f;
         }
     }
     bike.sprite.setTexture(*tex, true); // reset texture rect to avoid cropping

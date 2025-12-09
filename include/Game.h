@@ -51,13 +51,17 @@ private:
     sf::View view;
 
     sf::Texture mapTexture;
+    sf::Texture mapOverlayTexture;
     sf::Texture playerTexture;
     sf::Texture bikeTexture;
     sf::Texture bikeTextureFront;
     sf::Texture bikeTextureLeft;
     sf::Texture bikeTextureRight;
+    sf::Texture bikeTextureBack;
     sf::Texture entryTexture;
     sf::Sprite entrySprite;
+    sf::Texture failTexture;
+    sf::Sprite failSprite;
     sf::Texture playerTextureUp;
     sf::Texture playerTextureDown;      
     sf::Texture playerTextureLeft;

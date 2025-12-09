@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(NTU_Rush LANGUAGES CXX)
+project(bike_away LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,7 +17,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/roads.json
                COPYONLY)
 
 set(SOURCES
-    src/main.cpp
+    main.cpp
     src/Game.cpp
     src/Character.cpp
     src/Obstacle.cpp
@@ -27,16 +27,16 @@ set(SOURCES
     src/Utils.cpp
 )
 
-add_executable(ntu_rush ${SOURCES})
+add_executable(bike_away ${SOURCES})
 
-target_include_directories(ntu_rush PRIVATE
+target_include_directories(bike_away PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 find_package(SFML 2.6 COMPONENTS system window graphics audio REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 
-target_link_libraries(ntu_rush PRIVATE
+target_link_libraries(bike_away PRIVATE
     sfml-system
     sfml-window
     sfml-graphics
