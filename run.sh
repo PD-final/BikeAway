@@ -6,10 +6,10 @@ echo "=== BikeAway Run Script ==="
 OS="$(uname -s)"
 
 # Path for different OS
-EXE="./build/bin/ntu_rush"
+EXE="./build/bin/bike_away"
 
 if [[ "$OS" == MINGW* || "$OS" == CYGWIN* ]]; then
-    EXE="./build/bin/ntu_rush.exe"
+    EXE="./build/bin/bike_away.exe"
 fi
 
 if [[ ! -f "$EXE" ]]; then
