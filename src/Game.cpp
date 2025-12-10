@@ -26,8 +26,10 @@ Game::Game()
     bikeTextureLeft.loadFromFile("assets/bike_left.png");
     bikeTextureRight.loadFromFile("assets/bike_right.png");
     bikeTextureBack.loadFromFile("assets/bike_back.png");
+    heartTexture.loadFromFile("assets/heart.png");
     entryTexture.loadFromFile("assets/entry.png");
     failTexture.loadFromFile("assets/fail.png");
+    successTexture.loadFromFile("assets/success.png");
     playerTextureUp.loadFromFile("assets/player_back.png");
     playerTextureDown.loadFromFile("assets/player_front.png");
     playerTextureLeft.loadFromFile("assets/player_left.png");
@@ -93,18 +95,18 @@ Game::Game()
     failText.setOutlineColor(sf::Color::Black);
     failText.setOutlineThickness(3.f);
 
-    shieldText.setFont(uiFont);
-    shieldText.setCharacterSize(40);
-    shieldText.setFillColor(sf::Color::White);
-    shieldText.setOutlineColor(sf::Color::Black);
-    shieldText.setOutlineThickness(2.f);
-
     invincibleText.setFont(uiFont);
     invincibleText.setCharacterSize(24);
     invincibleText.setFillColor(sf::Color::Yellow);
     invincibleText.setOutlineColor(sf::Color::Black);
     invincibleText.setOutlineThickness(2.f);
     invincibleText.setString(utf8(u8"無敵中"));
+
+    reachedText.setFont(uiFont);
+    reachedText.setCharacterSize(40);
+    reachedText.setFillColor(sf::Color::White);
+    reachedText.setOutlineColor(sf::Color::Black);
+    reachedText.setOutlineThickness(2.f);
 
 }
 
@@ -271,8 +273,9 @@ void Game::onEnterPlaying() {
     map.mapSprite.setPosition(0.f, 0.f);
     gameClock.restart();
     spawnInvincibleSeconds = 5.f;
-    shieldInvincibleSeconds = 0.f;
-    player.shieldCharges = 3; // initial shields
+    heartInvincibleSeconds = 0.f;
+    player.hearts = 3; // initial hearts
+    hasReachedDestination = false;
     // convert to char* and use utf8()
     std::string missionStr = "Destination: " + destinationBuilding.name;
     const char* missionCStr = missionStr.c_str();
@@ -285,7 +288,24 @@ void Game::onEnterHome() {
 
 void Game::onEnterWin() {
     window.setView(window.getDefaultView());
-    winText.setString(utf8(("You reached " + destinationBuilding.name + "! Press Enter/Esc.").c_str()));
+    // Prepare success sprite for current window size
+    sf::Vector2f fSize(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y));
+    if (successTexture.getSize().x > 0 && successTexture.getSize().y > 0) {
+        float sScaleX = fSize.x / static_cast<float>(successTexture.getSize().x);
+        float sScaleY = fSize.y / static_cast<float>(successTexture.getSize().y);
+        float sScale = std::max(sScaleX, sScaleY);
+        successSprite.setTexture(successTexture);
+        successSprite.setScale(sScale, sScale);
+        float sPosX = (fSize.x - successTexture.getSize().x * sScale) * 0.5f;
+        float sPosY = (fSize.y - successTexture.getSize().y * sScale) * 0.5f;
+        successSprite.setPosition(sPosX, sPosY);
+    }
+    hasReachedDestination = true;
+    std::string reachedStr = "你已抵達 " + destinationBuilding.name;
+    reachedText.setString(utf8(reachedStr.c_str()));
+    sf::FloatRect reachBounds = reachedText.getLocalBounds();
+    reachedText.setOrigin(reachBounds.left + reachBounds.width, reachBounds.top);
+    reachedText.setPosition(fSize.x - 10.f, 10.f);
 }
 
 void Game::onEnterFail() {
@@ -310,7 +330,7 @@ void Game::updateHome(sf::Time) {
 void Game::updatePlaying(sf::Time dt) {
     float dtSec = dt.asSeconds();
     spawnInvincibleSeconds = std::max(0.f, spawnInvincibleSeconds - dtSec);
-    shieldInvincibleSeconds = std::max(0.f, shieldInvincibleSeconds - dtSec);
+    heartInvincibleSeconds = std::max(0.f, heartInvincibleSeconds - dtSec);
     hitFlashSeconds = std::max(0.f, hitFlashSeconds - dtSec);
 
     sf::Vector2f prevPos = player.worldPos;
@@ -328,15 +348,18 @@ void Game::updatePlaying(sf::Time dt) {
 
     map.update(dtSec);
     // check collision with bikes
-    if (spawnInvincibleSeconds <= 0.f && shieldInvincibleSeconds <= 0.f) {
+    if (spawnInvincibleSeconds <= 0.f && heartInvincibleSeconds <= 0.f) {
         for (const auto& obs : map.obstacles) {
             if (obs.type == ObstacleType::Bike && obs.spawnGraceSeconds <= 0.f && player.collidesWith(obs)) {
-                if (player.shieldCharges > 0) {
-                    player.shieldCharges -= 1;
-                    shieldInvincibleSeconds = 3.f;
-                    hitFlashSeconds = 0.3f;
+                hitFlashSeconds = 0.3f;
+                if (player.hearts > 0) {
+                    player.hearts -= 1;
+                    if (player.hearts <= 0) {
+                        changeScreen(ScreenState::Fail);
+                        return;
+                    }
+                    heartInvincibleSeconds = 3.f;
                 } else {
-                    hitFlashSeconds = 0.3f;
                     changeScreen(ScreenState::Fail);
                     return;
                 }
@@ -365,19 +388,20 @@ void Game::updatePlaying(sf::Time dt) {
     // update UI positions
     sf::Vector2f viewSize(window.getDefaultView().getSize());
 
-    // shield count top-right
-    char shieldBuf[32];
-    std::snprintf(shieldBuf, sizeof(shieldBuf), "Shield: %d", player.shieldCharges);
-    shieldText.setString(shieldBuf);
-    sf::FloatRect shieldBounds = shieldText.getLocalBounds();
-    shieldText.setOrigin(shieldBounds.left + shieldBounds.width, shieldBounds.top);
-    shieldText.setPosition(viewSize.x - 10.f, 10.f);
-
     // invincible indicator top-center
-    if (spawnInvincibleSeconds > 0.f || shieldInvincibleSeconds > 0.f) {
+    if (spawnInvincibleSeconds > 0.f || heartInvincibleSeconds > 0.f) {
         sf::FloatRect invBounds = invincibleText.getLocalBounds();
         invincibleText.setOrigin(invBounds.left + invBounds.width / 2.f, invBounds.top);
         invincibleText.setPosition(viewSize.x / 2.f, 10.f);
+    }
+
+    // destination text top-right (only after reached)
+    if (hasReachedDestination) {
+        std::string reachedStr = "你已抵達 " + destinationBuilding.name;
+        reachedText.setString(utf8(reachedStr.c_str()));
+        sf::FloatRect reachBounds = reachedText.getLocalBounds();
+        reachedText.setOrigin(reachBounds.left + reachBounds.width, reachBounds.top);
+        reachedText.setPosition(viewSize.x - 10.f, 10.f);
     }
 }
 
@@ -399,8 +423,26 @@ void Game::renderPlaying() {
     window.setView(window.getDefaultView());
     window.draw(timerText);
     window.draw(missionText);
-    window.draw(shieldText);
-    if (spawnInvincibleSeconds > 0.f || shieldInvincibleSeconds > 0.f) {
+    // draw hearts (top-right)
+    if (heartTexture.getSize().x > 0 && heartTexture.getSize().y > 0) {
+        sf::Sprite heart(heartTexture);
+        float scale = 1.f;
+        heart.setScale(scale, scale);
+        sf::FloatRect hb = heart.getLocalBounds();
+        heart.setOrigin(hb.width / 2.f, hb.height / 2.f);
+        sf::Vector2f viewSize(window.getDefaultView().getSize());
+        float spacing = hb.width * scale + 6.f;
+        float startX = viewSize.x - (hb.width * scale) * 0.5f - 10.f;
+        float y = 10.f + (hb.height * scale) * 0.5f;
+        for (int i = 0; i < player.hearts; ++i) {
+            heart.setPosition(startX - i * spacing, y);
+            window.draw(heart);
+        }
+    }
+    if (hasReachedDestination) {
+        window.draw(reachedText);
+    }
+    if (spawnInvincibleSeconds > 0.f || heartInvincibleSeconds > 0.f) {
         window.draw(invincibleText);
     }
     if (hitFlashSeconds > 0.f) {
@@ -422,8 +464,9 @@ void Game::updateFail(sf::Time) {
 
 void Game::renderWin() {
     window.setView(window.getDefaultView());
-    window.clear(sf::Color(18, 26, 60));
-    window.draw(winText);
+    window.clear(sf::Color::Black);
+    window.draw(successSprite);
+    window.draw(reachedText);
 }
 
 void Game::renderFail() {
@@ -444,7 +487,7 @@ void Game::spawnBikesOnRoads() {
         sf::Vector2f u = dir / len;
         sf::Vector2f n{-u.y, u.x};
 
-        int count = std::max(2, static_cast<int>(len / 100.f)); // more bikes on longer roads
+        int count = std::max(2, static_cast<int>(len / 300.f)); // more bikes on longer roads
         for (int k = 0; k < count; ++k) {
             Obstacle bike;
             bike.type = ObstacleType::Bike;

@@ -11,7 +11,7 @@ void PowerUp::apply(Character& player) {
             break;
 
         case PowerUpType::Shield:
-            player.shieldCharges += 1;
+            player.hearts += 1;
             break;
 
         case PowerUpType::StudentID:

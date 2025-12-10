@@ -9,8 +9,8 @@ public:
     void handleInput(float dt);
     sf::Vector2f worldPos;
     float speed = 300.f;
-    int shieldCharges = 0;
-    float shieldTimer = 0.f; // seconds remaining invincible from shield
+    int hearts = 0;
+    float shieldTimer = 0.f; // unused timer placeholder
     void setTextures(
         sf::Texture* up,
         sf::Texture* down,
