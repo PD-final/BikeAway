@@ -58,10 +58,13 @@ private:
     sf::Texture bikeTextureLeft;
     sf::Texture bikeTextureRight;
     sf::Texture bikeTextureBack;
+    sf::Texture heartTexture;
     sf::Texture entryTexture;
     sf::Sprite entrySprite;
     sf::Texture failTexture;
     sf::Sprite failSprite;
+    sf::Texture successTexture;
+    sf::Sprite successSprite;
     sf::Texture playerTextureUp;
     sf::Texture playerTextureDown;      
     sf::Texture playerTextureLeft;
@@ -78,11 +81,12 @@ private:
     sf::Text missionText;
     sf::Text winText;
     sf::Text failText;
-    sf::Text shieldText;
     sf::Text invincibleText;
+    sf::Text reachedText;
     float hitFlashSeconds = 0.f;
     float spawnInvincibleSeconds = 0.f;
-    float shieldInvincibleSeconds = 0.f;
+    float heartInvincibleSeconds = 0.f;
+    bool hasReachedDestination = false;
 
     ScreenState screen = ScreenState::Home;
     sf::RectangleShape homeBackground;
