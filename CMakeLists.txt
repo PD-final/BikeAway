@@ -8,13 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/hitbox.json
-               ${CMAKE_CURRENT_BINARY_DIR}/data/hitbox.json
-               COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/roads.json
-               ${CMAKE_CURRENT_BINARY_DIR}/data/roads.json
-               COPYONLY)
+set(RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/source)
 
 set(SOURCES
     main.cpp
@@ -28,6 +22,12 @@ set(SOURCES
 )
 
 add_executable(bike_away ${SOURCES})
+
+add_custom_command(TARGET bike_away POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${RESOURCE_DIR}
+            $<TARGET_FILE_DIR:bike_away>/source
+)
 
 target_include_directories(bike_away PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include

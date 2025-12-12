@@ -18,22 +18,22 @@ Game::Game()
     window.setFramerateLimit(60);
     window.setKeyRepeatEnabled(false);
 
-    mapTexture.loadFromFile("assets/ntu_map.png");
-    mapOverlayTexture.loadFromFile("assets/ntu_map_buildings.png");
-    playerTexture.loadFromFile("assets/player_front.png");
-    bikeTexture.loadFromFile("assets/bike.png");
-    bikeTextureFront.loadFromFile("assets/bike_front.png");
-    bikeTextureLeft.loadFromFile("assets/bike_left.png");
-    bikeTextureRight.loadFromFile("assets/bike_right.png");
-    bikeTextureBack.loadFromFile("assets/bike_back.png");
-    heartTexture.loadFromFile("assets/heart.png");
-    entryTexture.loadFromFile("assets/entry.png");
-    failTexture.loadFromFile("assets/fail.png");
-    successTexture.loadFromFile("assets/success.png");
-    playerTextureUp.loadFromFile("assets/player_back.png");
-    playerTextureDown.loadFromFile("assets/player_front.png");
-    playerTextureLeft.loadFromFile("assets/player_left.png");
-    playerTextureRight.loadFromFile("assets/player_right.png");
+    mapTexture.loadFromFile("source/assets/ntu_map.png");
+    mapOverlayTexture.loadFromFile("source/assets/ntu_map_buildings.png");
+    playerTexture.loadFromFile("source/assets/player_front.png");
+    bikeTexture.loadFromFile("source/assets/bike.png");
+    bikeTextureFront.loadFromFile("source/assets/bike_front.png");
+    bikeTextureLeft.loadFromFile("source/assets/bike_left.png");
+    bikeTextureRight.loadFromFile("source/assets/bike_right.png");
+    bikeTextureBack.loadFromFile("source/assets/bike_back.png");
+    heartTexture.loadFromFile("source/assets/heart.png");
+    entryTexture.loadFromFile("source/assets/entry.png");
+    failTexture.loadFromFile("source/assets/fail.png");
+    successTexture.loadFromFile("source/assets/success.png");
+    playerTextureUp.loadFromFile("source/assets/player_back.png");
+    playerTextureDown.loadFromFile("source/assets/player_front.png");
+    playerTextureLeft.loadFromFile("source/assets/player_left.png");
+    playerTextureRight.loadFromFile("source/assets/player_right.png");
 
     player.setTextures(
         &playerTextureUp,
@@ -44,8 +44,8 @@ Game::Game()
 
     map.setTexture(mapTexture);
     map.setOverlayTexture(mapOverlayTexture);
-    map.loadBuildingsFromJson("data/hitbox.json");
-    map.loadRoadsFromJson("data/roads.json");
+    map.loadBuildingsFromJson("source/data/hitbox.json");
+    map.loadRoadsFromJson("source/data/roads.json");
     spawnBikesOnRoads();
 
     // setup player
@@ -61,8 +61,8 @@ Game::Game()
     view.setSize(window.getSize().x, window.getSize().y);
     view.setCenter(player.worldPos);
     // ====== 計時器 UI 初始化 ======
-    if (!uiFont.loadFromFile("assets/NotoSansTC-Regular.ttf")) {
-        std::cerr << "Failed to load font: assets/NotoSansTC-Regular.ttf\n";
+    if (!uiFont.loadFromFile("source/assets/NotoSansTC-Regular.ttf")) {
+        std::cerr << "Failed to load font: source/assets/NotoSansTC-Regular.ttf\n";
     }
 
     timerText.setFont(uiFont);
@@ -272,6 +272,7 @@ void Game::onEnterPlaying() {
     view.setCenter(player.worldPos);
     map.mapSprite.setPosition(0.f, 0.f);
     gameClock.restart();
+    timerText.setString("01:00");
     spawnInvincibleSeconds = 5.f;
     heartInvincibleSeconds = 0.f;
     player.hearts = 3; // initial hearts
@@ -374,9 +375,10 @@ void Game::updatePlaying(sf::Time dt) {
             return;
         }
     }
-        // ====== 更新計時器文字 ======
+    // ====== 更新計時器文字與倒數 ======
     sf::Time elapsed = gameClock.getElapsedTime();
-    int totalSec = static_cast<int>(elapsed.asSeconds());
+    float remaining = timeLimitSeconds - elapsed.asSeconds();
+    int totalSec = static_cast<int>(std::max(0.f, remaining));
 
     int minutes = totalSec / 60;
     int seconds = totalSec % 60;
@@ -384,6 +386,11 @@ void Game::updatePlaying(sf::Time dt) {
     char buffer[16];
     std::snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
     timerText.setString(buffer);
+
+    if (remaining <= 0.f) {
+        changeScreen(ScreenState::Fail);
+        return;
+    }
 
     // update UI positions
     sf::Vector2f viewSize(window.getDefaultView().getSize());

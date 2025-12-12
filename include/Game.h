@@ -76,6 +76,7 @@ private:
     Building destinationBuilding;
     
     sf::Clock gameClock;   // 從遊戲開始到現在經過多久
+    const float timeLimitSeconds = 60.f;
     sf::Font uiFont;       // 顯示文字用
     sf::Text timerText;    // 左上角的時間文字
     sf::Text missionText;
